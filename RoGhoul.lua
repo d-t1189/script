@@ -31,7 +31,8 @@ local myData = loadstring(game:HttpGet("https://raw.githubusercontent.com/z4gs/s
         ["Gyakusatsu"] = false,
         ["Eto Yoshimura"] = false,
         ["Koutarou Amon"] = false,
-        ["Nishiki Nishio"] = false
+        ["Nishiki Nishio"] = false,
+        ["Dakii Met5Cac"] = false
     },
     DistanceFromNpc = 8,
     DistanceFromBoss = 8,
@@ -40,12 +41,14 @@ local myData = loadstring(game:HttpGet("https://raw.githubusercontent.com/z4gs/s
     ReputationCashout = false,
     AutoKickWhitelist = ""
 })
+
 local array = {
     boss = {
         ["Gyakusatsu"] = 1250,
         ["Eto Yoshimura"] = 1250,
         ["Koutarou Amon"] = 750,
-        ["Nishiki Nishio"] = 250
+        ["Nishiki Nishio"] = 250,
+        ["Dakii Met5Cac"] = 10000
     },
 
     npcs = {["Aogiri Members"] = "GhoulSpawns", Investigators = "CCGSpawns", Humans = "HumanSpawns"},
@@ -82,7 +85,54 @@ btn = tab1:AddButton("Start", function()
         btn.Text, array.autofarm, array.died = "Start", false, false
     end
 end)
-array.stages[tonumber(opt)]
+
+local function format(number)
+    local i, k, j = tostring(number):match("(%-?%d?)(%d*)(%.?.*)")
+    return i..k:reverse():gsub("(%d%d%d)", "%1,"):reverse()..j
+end
+
+labels = setmetatable({
+    text = {label = tab1:AddLabel("")},
+    tfarm = {label = tab1:AddLabel("")},
+    space = {label = tab1:AddLabel("")},
+    Quest = {prefix = "Current Quest: ", label = tab1:AddLabel("Current Quest: None")},
+    Yen = {prefix = "Yen: ", label = tab1:AddLabel("Yen: 0"), value = 0, oldval = player.PlayerFolder.Stats.Yen.Value},
+    RC = {prefix = "RC: ", label = tab1:AddLabel("RC: 0"), value = 0, oldval = player.PlayerFolder.Stats.RC.Value},
+    Kills = {prefix = "Kills: ", label = tab1:AddLabel("Kills: 0"), value = 0} 
+}, {
+    __call = function (self, typ, newv, oldv)
+        if typ and newv then
+            local object = self[typ]
+            if type(newv) == "number" then
+                object.value = object.value + newv
+                object.label.Text = object.prefix..format(object.value)
+                if oldv then
+                    object.oldval = oldv
+                end
+            elseif object.prefix then
+                object.label.Text = object.prefix..newv
+            else
+                object.label.Text = newv
+            end
+            return
+        end
+        for i,v in pairs(labels) do
+            v.value = 0
+            v.label.Text = v.prefix.."0"
+        end
+    end
+})
+
+local function getLabel(la)
+    return labels[la].value and labels[la].value or labels[la].label.Text
+end
+
+btn3 = tab1:AddButton("Reset", function() labels() end)
+
+if team == "CCG" then tab2:AddLabel("Quinque Stage") else tab2:AddLabel("Kagune Stage") end
+
+local drop2 = tab2:AddDropdown("[ 1 ]", function(opt)
+    array.stage = array.stages[tonumber(opt)]
 end)
 
 array.stage = "One"
@@ -123,6 +173,38 @@ player.PlayerFolder.Trainers[team.."Trainer"].Changed:connect(function()
     labels("p", "Current trainer: "..player.PlayerFolder.Trainers[team.."Trainer"].Value)
     progress:Set(player.PlayerFolder.Trainers[player.PlayerFolder.Trainers[team.."Trainer"].Value].Progress.Value)
 end)
+
+btn2 = tab3:AddButton("Start", function()
+    if not array.trainer then
+        array.trainer, btn2.Text = true, "Stop"
+        local connection, time
+
+        while array.trainer do
+            if connection and connection.Connected then
+                connection:Disconnect()
+            end
+            
+            local tkey, result
+
+            connection = player.Backpack.DescendantAdded:Connect(function(obj)
+                if tostring(obj) == "TSCodeVal" and obj:IsA("StringValue") then
+                    tkey = obj.Value
+                end
+            end)
+            
+            result = invoke(remotes.Trainers.RequestTraining)
+
+            if result == "TRAINING" then
+                for i,v in pairs(workspace.TrainingSessions:GetChildren()) do
+                    if waitforobj(v, "Player").Value == player then
+                        fire(waitforobj(v, "Comm"), "Finished", tkey, false)
+                        break
+                    end
+                end
+            elseif result == "TRAINING COMPLETE" then
+                labels("time", "Switching to other trainer...")
+                for i,v in pairs(player.PlayerFolder.Trainers:GetDescendants()) do
+                    if table.find(trainers, v.Name) and findobj(v, "Progress") and tonumber(v.Progress.Value) < 100 and tonumber(player.PlayerFolder.Trainers[player.PlayerFolder.Trainers[team.."Trainer"].Value].Progress.Value) == 100 then
                         invoke(remotes.Trainers.ChangeTrainer, v.Name)
                         wait(1.5)
                     end
@@ -139,6 +221,7 @@ end)
 end)
 
 labels.time = {label = tab3:AddLabel("")}
+
 tab4:AddSwitch("Auto add kagune/quinque stats", function(bool) array.weapon = bool end)
 tab4:AddSwitch("Auto add durability stats", function(bool) array.dura = bool end)
 tab4:AddSwitch("Auto kick", function(bool) array.kick = bool end)
@@ -190,7 +273,8 @@ local function tp(pos)
         TweenInfo.new((player.Character.HumanoidRootPart.Position - pos.p).magnitude / myData.TeleportSpeed, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 0), 
         {Value = pos}
     )
-tween:Play()
+
+    tween:Play()
 
     local completed
     tween.Completed:Connect(function()
@@ -243,6 +327,7 @@ local function getNPC()
     end
     return nearestnpc
 end
+
 local function getQuest(typ)
     labels("text", "Moving to quest NPC")
 
@@ -288,6 +373,7 @@ local function collect(npc)
         fireclickdetector(clickpart[""], 1)
     until not model.Parent.Parent or not findobj(model, "ClickPart") or not array.autofarm or player.Character.Humanoid.Health <= 0
 end
+
 local function pressKey(topress)
     fire(player.Character.Remotes.KeyEvent, key, topress, "Down", player:GetMouse().Hit, nil, workspace.Camera.CFrame)
 end
@@ -337,8 +423,37 @@ end)()
 do
     fireclickdetector(workspace.TrainerModel.ClickIndicator.ClickDetector)
     waitforobj(waitforobj(player.PlayerGui, "TrainersGui"), "TrainersGuiScript")
-    player.PlayerGui.TrainersGui
-"Aogiri Member"].Value == player.PlayerFolder.CurrentQuest.Complete["Aogiri Member"].Max.Value) then
+    player.PlayerGui.TrainersGui:Destroy()
+
+    repeat 
+        for i,v in pairs(getgc(true)) do
+            if not key and type(v) == "function" and getinfo(v).source:find(".ClientControl") then
+                for i2,v2 in pairs(getconstants(v)) do
+                    if v2 == "KeyEvent" then
+                        local keyfound = getconstant(v, i2 + 1)
+                        if #keyfound >= 100 then
+                            key = keyfound
+                            break
+                        end
+                    end
+                end
+            elseif type(v) == "table" and ((table.find(v, "(S1) Kureo Mado") and team == "CCG") or (table.find(v, "(S1) Ken Kaneki"))) then
+                trainers = v
+            end
+        end
+        wait()
+    until key
+end
+
+-- auto farm
+while true do
+    if array.autofarm then
+        pcall(function()
+            if player.Character.Humanoid.Health > 0 and player.Character.HumanoidRootPart and player.Character.Remotes.KeyEvent then
+                if not findobj(player.Character, "Kagune") and not findobj(player.Character, "Quinque")  then
+                    pressKey(array.stage)
+                end
+                if myData.ReputationFarm and (not findobj(player.PlayerFolder.CurrentQuest.Complete, "Aogiri Member") or player.PlayerFolder.CurrentQuest.Complete["Aogiri Member"].Value == player.PlayerFolder.CurrentQuest.Complete["Aogiri Member"].Max.Value) then
                     getQuest(true)
                     return
                 elseif myData.ReputationCashout and tick() - oldtick > 7200 then
@@ -362,7 +477,8 @@ do
                     end)()
 
                     labels("text", "Moving to: "..npc.Name)
-if myData.Boss[npc.Name] or npc.Parent.Name == "GyakusatsuSpawn" then
+
+                    if myData.Boss[npc.Name] or npc.Parent.Name == "GyakusatsuSpawn" then
                         tp(npc.HumanoidRootPart.CFrame * CFrame.Angles(math.rad(90),0,0) + Vector3.new(0,myData.DistanceFromBoss,0))
                     else
                         tp(npc.HumanoidRootPart.CFrame + npc.HumanoidRootPart.CFrame.lookVector * myData.DistanceFromNpc)

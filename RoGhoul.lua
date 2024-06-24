@@ -1,5 +1,5 @@
 local gui = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/z4gs/scripts/master/testtttt.lua"))():AddWindow("Ro-Ghoul", {
-    main_color = Color3.fromRGB(0,0,0),
+    main_color = Color3.fromRGB(10,10,10),
     min_size = Vector2.new(373, 340),
     can_resize = false
 })
@@ -37,7 +37,7 @@ local myData = loadstring(game:HttpGet("https://raw.githubusercontent.com/z4gs/s
     DistanceFromNpc = 8,
     DistanceFromBoss = 8,
     TeleportSpeed = 250,
-    ReputationFarm = false,
+    ReputationFarm = true,
     ReputationCashout = false,
     AutoKickWhitelist = ""
 })
@@ -153,7 +153,7 @@ end
 
 tab2:AddSlider("TP Speed", function(x)
     myData.TeleportSpeed = x
-end, {min = 90, max = 250}):Set(45)
+end, {min = 90, max = 250}):Set(55)
 
 tab2:AddSlider("Distance from NPC", function(x)
     myData.DistanceFromNpc = x * -1

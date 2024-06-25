@@ -32,7 +32,7 @@ local myData = loadstring(game:HttpGet("https://raw.githubusercontent.com/z4gs/s
         ["Eto Yoshimura"] = false,
         ["Koutarou Amon"] = false,
         ["Nishiki Nishio"] = false,
-        ["Dakii Met5Cac"] = false
+        ["Touka Kirishima"] = false
     },
     DistanceFromNpc = 8,
     DistanceFromBoss = 8,
@@ -48,7 +48,7 @@ local array = {
         ["Eto Yoshimura"] = 1250,
         ["Koutarou Amon"] = 750,
         ["Nishiki Nishio"] = 250,
-        ["Dakii Met5Cac"] = 250
+        ["Touka Kirishima"] = 250
     },
 
     npcs = {["Aogiri Members"] = "GhoulSpawns", Investigators = "CCGSpawns", Humans = "HumanSpawns"},
